@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Barang Masuk</title>
+  <style>
+    /* Gaya halaman sama seperti sebelumnya (dipersingkat) */
+    /* ... gaya CSS tetap ... */
+  </style>
+</head>
+<body>
+  <h2>Barang Masuk</h2>
+  <form id="formMasuk" autocomplete="off">
+    <label for="kode_barang">Kode Barang</label>
+    <input list="listKodeBarang" id="kode_barang" name="kode_barang" required />
+    <datalist id="listKodeBarang"></datalist>
+
+    <label for="nama_barang">Nama Barang</label>
+    <input list="listNamaBarang" id="nama_barang" name="nama_barang" required />
+    <datalist id="listNamaBarang"></datalist>
+
+    <label for="kode_buyer">Kode Buyer</label>
+    <input type="text" id="kode_buyer" name="kode_buyer" required />
+
+    <label for="jumlah">Jumlah</label>
+    <input type="number" id="jumlah" name="jumlah" required min="1" />
+
+    <label for="satuan">Satuan</label>
+    <input type="text" id="satuan" name="satuan" placeholder="Contoh: pcs, kg, lusin" required />
+
+    <label for="keterangan">Keterangan</label>
+    <input type="text" id="keterangan" name="keterangan" required />
+
+    <label for="tanggal">Tanggal Masuk</label>
+    <input type="date" id="tanggal" name="tanggal" required />
+
+    <div class="btn-container">
+      <button type="submit">Simpan</button>
+      <button type="button" class="btn-back" onclick="window.location.href='index.html'">Kembali ke Dashboard</button>
+    </div>
+  </form>
+
+  <script>
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwmcZZXfehFW11HFXYE9V7L0BLARu-kl-8laZV8Y9mAKVs3MnqB6HgLwcQc-gE7T8ku/exec"; // GANTI dengan URL GAS kamu
+
+    // Optional: Ambil data dari localStorage agar bisa prefill datalist
+    const dataMasuk = JSON.parse(localStorage.getItem('dataMasuk')) || [];
+    const dataKeluar = JSON.parse(localStorage.getItem('dataKeluar')) || [];
+    const barangSet = new Map();
+
+    [...dataMasuk, ...dataKeluar].forEach(item => {
+      if (item.kode_barang && item.nama_barang) {
+        barangSet.set(item.kode_barang, item.nama_barang);
+      }
+    });
+
+    const datalistKode = document.getElementById('listKodeBarang');
+    const datalistNama = document.getElementById('listNamaBarang');
+
+    barangSet.forEach((nama, kode) => {
+      const optionKode = document.createElement('option');
+      optionKode.value = kode;
+      datalistKode.appendChild(optionKode);
+
+      const optionNama = document.createElement('option');
+      optionNama.value = nama;
+      datalistNama.appendChild(optionNama);
+    });
+
+    const inputKode = document.getElementById('kode_barang');
+    const inputNama = document.getElementById('nama_barang');
+
+    inputKode.addEventListener('change', () => {
+      const nama = barangSet.get(inputKode.value);
+      if (nama) inputNama.value = nama;
+    });
+
+    inputNama.addEventListener('change', () => {
+      const found = [...barangSet.entries()].find(([k, n]) => n === inputNama.value);
+      if (found) inputKode.value = found[0];
+    });
+
+    const form = document.getElementById('formMasuk');
+    form.addEventListener('submit', async function (e) {
+      e.preventDefault();
+
+      const data = Object.fromEntries(new FormData(form).entries());
+      data.type = "masuk"; // ← penting untuk memberi tahu server ini barang masuk
+
+      try {
+        const res = await fetch(WEB_APP_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data)
+        });
+
+        const json = await res.json();
+        if (json.status === "success") {
+          alert("Data berhasil disimpan!");
+          window.location.href = "index.html";
+        } else {
+          alert("Gagal menyimpan data: " + json.message);
+        }
+      } catch (err) {
+        alert("Terjadi kesalahan: " + err.message);
+      }
+    });
+  </script>
+</body>
+</html>
